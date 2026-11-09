@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send('Bot 7/24 aktif tutuluyor!');
+  res.send('5 Tane Bot 7/24 aktif tutuluyor!');
 });
 
 app.listen(PORT, () => {
@@ -14,75 +14,71 @@ app.listen(PORT, () => {
 });
 
 // --- MINECRAFT BOT AYARLARI ---
-const botOptions = {
-  host: 'sofiamc.mcsh.gg', // Buraya sunucu IP adresini yaz (örn: sunucum.aternos.me)
-  port: 25565,               // Sunucu Portu (varsayılan: 25565)
-  username: 'bot',           // Botun oyundaki adı
-  version: '1.21.4'          // Minecraft Sürümü
-};
+const SERVER_HOST = 'sofiamc.mcsh.gg'; // Buraya sunucu IP adresini yaz (örn: sunucum.aternos.me)
+const SERVER_PORT = 25565;               // Sunucu Portu (varsayılan: 25565)
+const MC_VERSION = '1.21.4';             // Minecraft Sürümü
+const BOT_COUNT = 5;                     // Toplam bot sayısı
 
-function createBot() {
-  const bot = mineflayer.createBot(botOptions);
+// 5 Tane Bot Oluşturma Fonksiyonu
+function startBot(index) {
+  const username = `bot_${index}`;
+
+  const bot = mineflayer.createBot({
+    host: SERVER_HOST,
+    port: SERVER_PORT,
+    username: username,
+    version: MC_VERSION
+  });
 
   bot.on('spawn', () => {
     console.log(`[+] ${bot.username} sunucuya başarıyla katıldı!`);
 
-    // Sunucuya ilk giriş veya sonraki girişler için şifre doğrulama mantığı
-    setTimeout(() => {
-      // Önce sunucunun chati veya mesajları incelenebilir ancak garanti olması için
-      // AuthMe gibi eklentiler genellikle sohbette "register" veya "login" yazar.
-      // Burada pratik olması adına sohbette mesajları dinleyip otomatik komut atabiliriz:
-    }, 2000);
-
-    // Botun sunucudan afk kalıp kick yemesini önlemek için düzenli zıplama
+    // Botların afk kalıp kick yememesi için rastgele aralıklarla zıplama
     setInterval(() => {
       bot.setControlState('jump', true);
       setTimeout(() => bot.setControlState('jump', false), 500);
-    }, 15000); // 15 saniyede bir zıplar
+    }, 12000 + index * 1000); // Hepsi aynı anda zıplamasın diye süre farkı
   });
 
-  // Sunucudaki mesajları ve uyarıları takip ederek otomatik kayıt/giriş yapma
-  bot.on('chat', (username, message) => {
-    if (username === bot.username) return;
-    
-    // Eğer sunucu kayıt olmanızı istiyorsa
-    if (message.toLowerCase().includes('register') || message.toLowerCase().includes('kayıt')) {
-      console.log('Kayıt isteği algılandı, /register gönderiliyor...');
-      bot.chat('/register baba1234 baba1234');
-    }
-    
-    // Eğer sunucu giriş yapmanızı istiyorsa
-    if (message.toLowerCase().includes('login') || message.toLowerCase().includes('giriş')) {
-      console.log('Giriş isteği algılandı, /login gönderiliyor...');
-      bot.chat('/login baba1234');
-    }
-  });
-
-  // Alternatif olarak sunucuya girer girmez garanti olsun diye birkaç saniye sonra komut göndermesini de sağlayabiliriz:
+  // Sunucuya ilk giriş veya sonraki girişler için kayıt/login işlemleri
   bot.once('spawn', () => {
     setTimeout(() => {
-      // Önce register dener, sunucu zaten kayıtlısın derse sıkıntı olmaz, 
-      // ardından veya doğrudan login de denenebilir. Sunucu yapına göre burayı şekillendirebiliriz.
       bot.chat('/register baba1234 baba1234');
       setTimeout(() => {
         bot.chat('/login baba1234');
       }, 3000);
-    }, 4000); // Oyuna girdikten 4 saniye sonra komutları sırayla dener
+    }, 4000);
+  });
+
+  bot.on('chat', (usernameMsg, message) => {
+    if (usernameMsg === bot.username) return;
+    
+    if (message.toLowerCase().includes('register') || message.toLowerCase().includes('kayıt')) {
+      bot.chat('/register baba1234 baba1234');
+    }
+    if (message.toLowerCase().includes('login') || message.toLowerCase().includes('giriş')) {
+      bot.chat('/login baba1234');
+    }
   });
 
   bot.on('kicked', (reason) => {
-    console.log(`[-] Bot sunucudan atıldı. Sebep: ${reason}`);
+    console.log(`[-] ${username} sunucudan atıldı. Sebep: ${reason}`);
   });
 
   bot.on('error', (err) => {
-    console.error('Bot Hatası:', err);
+    console.error(`[!] ${username} Hatası:`, err.message);
   });
 
-  // Bot oyundan düşerse otomatik olarak tekrar bağlanır
+  // Düşen bot otomatik olarak 5 saniye sonra tekrar bağlanır
   bot.on('end', () => {
-    console.log('[-] Bağlantı kesildi. 5 saniye sonra tekrar bağlanılıyor...');
-    setTimeout(createBot, 5000);
+    console.log(`[-] ${username} bağlantısı kesildi. 5 saniye sonra tekrar bağlanıyor...`);
+    setTimeout(() => startBot(index), 5000);
   });
 }
 
-createBot();
+// Botları 2'şer saniye arayla oyuna sok (Sunucu ban atmasın diye)
+for (let i = 1; i <= BOT_COUNT; i++) {
+  setTimeout(() => {
+    startBot(i);
+  }, i * 2000);
+}
