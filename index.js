@@ -15,7 +15,7 @@ app.listen(PORT, () => {
 
 // --- MINECRAFT BOT AYARLARI ---
 const botOptions = {
-  host: 'SUNUCU_IP_ADRESI', // Buraya sunucu IP adresini yaz (örn: sunucum.aternos.me)
+  host: 'sofiamc.mcsh.gg', // Buraya sunucu IP adresini yaz (örn: sunucum.aternos.me)
   port: 25565,               // Sunucu Portu (varsayılan: 25565)
   username: 'bot',           // Botun oyundaki adı
   version: '1.21.4'          // Minecraft Sürümü
